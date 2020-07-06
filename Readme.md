@@ -8,10 +8,10 @@ mstsc.exe /v:*'VMName'* or *'IP'* /shadow:*'SessionID'*
 
 There are two optional additional options:
 - /noconsentPrompt
-  <br>Connect to the Users session without prompting them to accept the connection
-  <br>**Note:** If a GPO is set to force the Consent Prompt then this switch has no effect
+  Connect to the Users session without prompting them to accept the connection
+  _**Note:**_ If a GPO is set to force the Consent Prompt then this switch has no effect
 - /control
-  <br>Allow Control of the Users Session
+  Allow Control of the Users Session
 
 You need to know the name or IP address of the Session Host the user is connect too and the Session ID of the users connection
 
