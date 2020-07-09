@@ -418,7 +418,6 @@ Function HostPoolSelected {
         }
 
     If ($FallActiveUsers.Count -eq 0 -and $SpringActiveUsers.Count -eq 0) {
-    Write-Host "!"
         $UserSession.text        = "No Active Users logged into Selected Host Pool"
         $UserSession.Enabled     = $false
         }
