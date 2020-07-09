@@ -1,8 +1,8 @@
-﻿<##################################################################################################
+<##################################################################################################
 
     Script Name:   Shadow a User.ps1
     Written By:    Garry Down
-    Version:       2.0
+    Version:       2.1
 
     Change Log: 
     -----------
@@ -12,6 +12,7 @@
     26/06/2020     1.1        Updated to allow prompt for Authentication if no Service Principal ID
                               Password TXT File Found
     06/07/2020     2.0        Updated to allow the Shadowing of both Fall or Spring Release Users
+    09/07/2020     2.1        Corrected an issue remunerating Active Spring Release Users
 
     The script has been created to allow an administrator to select a user via a PowerShell GUI
     and shadow that user
@@ -394,25 +395,30 @@ Function HostPoolSelected {
 
     Write-Host $(Get-Date -Format HH:mm:ss:) -ForegroundColor Gray -NoNewLine ; Write-Host "   Gathering a list of Users Connected to " -ForegroundColor DarkYellow -NoNewLine ; Write-Host $HostPool.Text -ForegroundColor DarkCyan
 
+    $UserSession.Items.Clear()
+    $UserSessionHost.Items.Clear()
+    $UserSessionID.Items.Clear()
+
     Foreach ($SpringHostPool in $SpringHostPools) {
         If ($SpringHostPool.Name -eq $HostPool.Text) {
             Foreach ($SpringResourceGroup in $SpringResourceGroups) {
-                $ActiveUsers     = Get-AzWvdUserSession -HostPoolName $HostPool.Text -ResourceGroupName $SpringResourceGroup -ErrorAction SilentlyContinue | where { $_.SessionState -eq "active"}
+                $SpringActiveUsers = Get-AzWvdUserSession -HostPoolName $HostPool.Text -ResourceGroupName $SpringResourceGroup -ErrorAction SilentlyContinue -Filter "SessionState eq 'active'"
+                If ($springActiveUsers.Count -ne 0) {
+                    # Host Pool found, break out of For Loop otherwise checking other RG's may blank the Active User List
+                    Break
+                    }
                 }
             }
         }
 
     Foreach ($FallHostPool in $FallHostPools) {
         If ($FallHostPool.HostPoolName -eq $HostPool.Text) {
-            $ActiveUsers         = Get-RdsUserSession -TenantName $FallTenantName -HostPoolName $HostPool.Text | where { $_.SessionState -eq "active"}
+            $FallActiveUsers     = Get-RdsUserSession -TenantName $FallTenantName -HostPoolName $HostPool.Text | where { $_.SessionState -eq "active"}
             }
         }
 
-    $UserSession.Items.Clear()
-    $UserSessionHost.Items.Clear()
-    $UserSessionID.Items.Clear()
-
-    If ($ActiveUsers.Count -eq 0) {
+    If ($FallActiveUsers.Count -eq 0 -and $SpringActiveUsers.Count -eq 0) {
+    Write-Host "!"
         $UserSession.text        = "No Active Users logged into Selected Host Pool"
         $UserSession.Enabled     = $false
         }
@@ -422,10 +428,16 @@ Function HostPoolSelected {
         $UserSession.Enabled     = $true
         }
 
-    Foreach ($ActiveUser in $ActiveUsers) {
+    Foreach ($ActiveUser in $FallActiveUsers) {
         $UserSession.Items.Add($ActiveUser.UserPrincipalName)
         $UserSessionHost.Items.Add($ActiveUser.SessionHostName)
         $UserSessionID.Items.Add($ActiveUser.SessionId)
+        }
+
+    Foreach ($ActiveUser in $SpringActiveUsers) {
+        $UserSession.Items.Add($ActiveUser.ActiveDirectoryUserName)
+        $UserSessionHost.Items.Add($ActiveUser.Name.Split('/')[1])
+        $UserSessionID.Items.Add($ActiveUser.Name.Split('/')[2])
         }
 
     }
@@ -478,11 +490,11 @@ Function ShadowUserSession {
     Write-Host $WVDSessionID -ForegroundColor Gray -NoNewline
     If ($AllowControl -eq "Yes") {
         Write-Host " with Remote Control " -NoNewline ; Write-Host "Enabled" -ForegroundColor Green
-        Start-Process -FilePath "mstsc.exe" -ArgumentList "/v:$($Session.SessionHostName) /shadow:$($Session.SessionId) /control"
+        Start-Process -FilePath "mstsc.exe" -ArgumentList "/v:$WVDSessionHost /shadow:$WVDSessionID /control"
         }
     Else {
         Write-Host " with Remote Control " -NoNewline ; Write-Host "Disabled" -ForegroundColor Red
-        Start-Process -FilePath "mstsc.exe" -ArgumentList "/v:$($Session.SessionHostName) /shadow:$($Session.SessionId)"
+        Start-Process -FilePath "mstsc.exe" -ArgumentList "/v:$WVDSessionHost /shadow:$WVDSessionID"
         }
     }
 
