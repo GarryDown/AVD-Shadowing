@@ -1,4 +1,4 @@
-# Shadow a User
+# AVD Shadowing
 
 The script has been created to allow an administrator to select a user via a PowerShell GUI
 and shadow that user
