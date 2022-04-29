@@ -22,38 +22,26 @@ The Azure Subscriptions within the Azure Tenant that Host AVD Environments (Line
             
 - AVDSubscriptions
             
-  - Note: This is an array so multiple Resource Groups can be added, seperated by a coma ','
+  - **Note:** This is an array so multiple Resource Groups can be added, seperated by a coma ','
   - Examples: 
     - @('My Only Subscription')
     - @('Subscription One','Subscription Two','Subscription Three')
 
 
 ### The Script Actions are:
-- If the Spring Release Features are enabled check the Azure **'Az.DesktopVirtualization'** PowerShell module is installed, if it is not installed then disable the Spring Release Features
-- If the Fall Release Features are enabled check the **'Microsoft.RDInfra.RDPowerShell'** PowerShell Module is installed, if it is not installed then disable the Fall Release Features
-- If neither Spring or Fall Features are enabled then **Quit**
-- Import the required PowerShell Module(s)
-- If the Spring Release Features are enabled:
-  - Login into Azure and connect to the configured Subscription ID
-  - Gather a List of Host Pools within the configured Subscription ID / Resource Groups specified
-- If the Fall Release Features are enabled:
-  - Connect to the WVD Management Plane
-  - Gather a List of Host Pools within the WVD Tenant Name specified
+- Import the required PowerShell Modules
+- If the Device running the Shadowing Script has Remote Assistance installed th
+- Login into Azure and connect to the configured Azure Tenant ID
 - Via the PowerShell GUI:
-  - Select the Host Pool the user is connected too
+  - If more than One Azure Subscription has been configured Provide a Drop Down Box so the Administrator
+  - Gather a List of the Host Pools within the Subscription and to populate the Host Pool list
+  - The required Host Pool is selected
   - Populate the User List with all ACTIVE Users connected to the Host Pool
   - Select the User to be shadowed
   - Enable Remote Control if required
   - Shadow the User
 
-If a Service Principal ID is to be used to connect to the WVD Management Plane then each User that needs to run this script needs to take a copy of both scripts and run them from within their personal area, the encryption of the Service Principal Password links the txt file to that user, therefore this can't be spared across multiple users
 
-_**Note:**_ Lines that require updating for each customer in the Shadow a User Script:
-- **Line 124:** Azure Subscription ID
-- **Line 125:** Resource Group(s)
-- **Line 130:** WVD Tenant Name
-- **Line 241:** Service Principal ID
-- **Line 242:** Azure Tenant ID
-
-_**Note:**_ Lines that require updating for each customer in the Save WVD Service Principal Password Script:
-- **Line 24:** Service Principal ID
+_**Note:**_ Lines that require updating for each customer in the AVD Shadowing Script:
+- **Line 78:** Azure Tenant ID
+- **Line 91:** Azure Subscriptions(s)
