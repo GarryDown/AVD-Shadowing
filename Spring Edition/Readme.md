@@ -3,7 +3,7 @@
 The script has been created to allow an administrator to select a user via a PowerShell GUI
 and shadow that user
 
-**Note:** This script now ONLY works with both the AVD Spring Release
+_**Note:**_ This script now ONLY works with both the AVD Spring Release
 
 ### Requirements
 
@@ -22,7 +22,7 @@ The Azure Subscriptions within the Azure Tenant that Host AVD Environments (Line
             
 - AVDSubscriptions
             
-  - **Note:** This is an array so multiple Resource Groups can be added, seperated by a coma ','
+  - _**Note:**_ This is an array so multiple Resource Groups can be added, seperated by a coma ','
   - Examples: 
     - @('My Only Subscription')
     - @('Subscription One','Subscription Two','Subscription Three')
