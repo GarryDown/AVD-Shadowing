@@ -4,15 +4,13 @@ Providing Remote Support, Shadowing, for a WVD Session is currently not availabl
 
 To Shadow a use you can use either Remote Assist or MSTSC, on a Client Device Remote Assist is enabled by Default but needs to be enabled in a Server OS
 
-<b><i>Remote Assist</i></b>
+_**Remote Assist**_
 
 The following command is used to run MSTSC:
 
 msra.exe /OfferRa _'Session Host FQDN'_ _'Users UPN'_:_'Session ID'_
 
-
-
-<b><i>MSTSC.exe</i></b>
+_**MSTSC.exe**_
 
 The following command is used to run MSTSC:
 
