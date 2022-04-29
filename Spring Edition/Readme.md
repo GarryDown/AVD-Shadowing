@@ -3,35 +3,14 @@
 The script has been created to allow an administrator to select a user via a PowerShell GUI
 and shadow that user
 
-**Note:** This script works with both the WVD Fall and Spring Edition Host Pools
+**Note:** This script now ONLY works with both the AVD Spring Release
 
 ### Requirements
 
-For the Spring Release feature to be available the PowerShell Module **'Az.DesktopVirtualization'** needs to be installed, this is one of the Azure PowerShell **'Az'** Modules, in v4.3.0 and above
+The Azure **'AZ'** PowerShell Modules need to be installed, specific Modules required are:
 
-For the Fall Release feature to be available the PowerShell Module **'Microsoft.RDInfra.RDPowerShell'** needs to be installed
-
-Credentials to Authenticate to Azure if the Spring Release Features are enabled
-
-Credentials to Authenticate to the WVD Management Plane if the Fall Release Features are enabled, either Login ID or a Service Principal ID (Details Hard Coded)
-
-### Spring Release
-
-Script connects to the Azure Subscripton ID that hosts the WVD Host Pools, if a valid connection to the Subscription ID is already available then this is used otherwise the user is promtped to Authenticate to Azure
-
-The Azure Subscripton ID is a Variable within the Script
-
-### Fall Release:
-
-Script connects to the Azure Subscripton ID that hosts the WVD Host Pools, if a valid connection to the Subscription ID is already available then this is used otherwise the user is promtped to Authenticate to Azure
-
-Script connects to the WVD Environment using a Service Principal ID (Details Hard Coded) or Prompts for login. If a Service Principal ID is to be used the Service Principal Password needs to be encrypted in the text file called 'WVDSvcPrincipal_Password.txt' located in the same folder as this script
-
-This encrypted text file is created by running the **'Save WVD Service Principal Password'** script provided with this script
-
-If No Password file is found then the user is prompted to Authenticate to the WVD Management Plane
-
-The WVD Tenant Name is a Variable within the Script
+        Az.Accounts
+        Az.DesktopVirtualization
 
 ### Variables:
 
