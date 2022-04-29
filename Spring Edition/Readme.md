@@ -3,7 +3,7 @@
 The script has been created to allow an administrator to select a user via a PowerShell GUI
 and shadow that user
 
-_**Note:**_ This script now ONLY works with both the AVD Spring Release
+_**Note:**_ This script now ONLY works with the AVD Spring Release
 
 ### Requirements
 
