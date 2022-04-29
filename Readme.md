@@ -33,4 +33,3 @@ Version|Description
 **v2.0**|Updated to support both the Fall and Spring Releases of WVD
 **v2.1**|Bug Fixes Applied
 **v3.0**|Updated to Support the Use of Remote Assist as well as MSTSC<br>Updated to support AVD being hosted in more than one Azure Subscription<br>Support for Fall Release REMOVED
-|
