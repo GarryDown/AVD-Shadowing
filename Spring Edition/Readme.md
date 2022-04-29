@@ -14,29 +14,19 @@ The Azure **'AZ'** PowerShell Modules need to be installed, specific Modules req
 
 ### Variables:
 
-_**Note:**_ Both Fall and Spring Releases can be set to True simultaneously
+Azure Tenant ID in which the Host Pools reside (Line 78)
+        
+- AzureTenantId
 
-Are Spring Release Host Pools to be included
-- SpringReleaseEnabled: True or False
+The Azure Subscriptions within the Azure Tenant that Host AVD Environments (Line 81)
+            
+- AVDSubscriptions
+            
+  - Note: This is an array so multiple Resource Groups can be added, seperated by a coma ','
+  - Examples: 
+    - @('My Only Subscription')
+    - @('Subscription One','Subscription Two','Subscription Three')
 
-Are Fall Release Host Pools to be included
-- FallReleaseEnabled: True or False
-
-Subscription ID the Spring Release Host Pools are located
-- SpringSubscriptionId
-
-Resource Groups the Spring Release Host Pools are located in, Within Subscription ID specified
-- SpringResourceGroups
-  This is an array so multiple Resource Groups can be added, seperated by a coma ','
-  
-Tenant Name of the Fall Release Host Pools
-- FallTenantName
-  
-WVD Service Principal ID (If WVD Service Principal ID is to be used)
-- svcPrincipalID
-
-Azure Tenant ID (If WVD Service Principal ID is to be used)
-- AzureTenantID
 
 ### The Script Actions are:
 - If the Spring Release Features are enabled check the Azure **'Az.DesktopVirtualization'** PowerShell module is installed, if it is not installed then disable the Spring Release Features
