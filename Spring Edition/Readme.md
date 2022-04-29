@@ -44,4 +44,4 @@ The Azure Subscriptions within the Azure Tenant that Host AVD Environments (Line
 
 _**Note:**_ Lines that require updating for each customer in the AVD Shadowing Script:
 - **Line 78:** Azure Tenant ID
-- **Line 91:** Azure Subscriptions(s)
+- **Line 81:** Azure Subscriptions(s)
