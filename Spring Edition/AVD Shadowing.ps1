@@ -2,7 +2,7 @@
 
     Script Name:   AVD Shadowing.ps1
     Written By:    Garry Down
-    Version:       3.0
+    Version:       3.1
 
     Change Log: 
     -----------
@@ -15,7 +15,7 @@
     09/07/2020     2.1        Corrected an issue remunerating Active Spring Release Users
     29/04/2022     3.0        Support for the Fall Release REMOVED
                               Support for AVD being deployed to more than one Azure Subscriptions
-
+    30/10/2023     3.1        Corrected Error is only a Single Subscription is required
     
     The script has been created to allow an administrator to select a user via a PowerShell GUI and shadow that user
 
@@ -168,7 +168,16 @@ If ($AVDSubscriptions.Count -gt 1) {
         $Subscriptions.Items.Add($Subs) | Out-Null
         }
     }
-
+Else {
+    $Subscriptions               = New-Object system.Windows.Forms.ComboBox
+    $Subscriptions.text          = $AVDSubscriptions
+    $Subscriptions.BackColor     = "#c2c2c2"
+    $Subscriptions.width         = 640
+    $Subscriptions.height        = 25
+    $Subscriptions.location      = New-Object System.Drawing.Point(30,45)
+    $Subscriptions.Font          = 'Microsoft Sans Serif,14'
+    }
+    
 $HostPool_Label                  = New-Object system.windows.forms.label
 $HostPool_Label.text             = "Select the Host Pool the user is connected too"
 $HostPool_Label.autosize         = $true
