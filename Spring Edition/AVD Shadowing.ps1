@@ -2,7 +2,7 @@
 
     Script Name:   AVD Shadowing.ps1
     Written By:    Garry Down
-    Version:       3.1
+    Version:       3.1a
 
     Change Log: 
     -----------
@@ -16,6 +16,7 @@
     29/04/2022     3.0        Support for the Fall Release REMOVED
                               Support for AVD being deployed to more than one Azure Subscriptions
     30/10/2023     3.1        Corrected Error is only a Single Subscription is required
+    31/10/2023     3.1a       Corrected Error is only a Single Subscription is required
     
     The script has been created to allow an administrator to select a user via a PowerShell GUI and shadow that user
 
@@ -73,6 +74,7 @@
 
 ##################################################################################################>
 
+
 ## Variables \ Arrays
 # Azure Tenant ID
 $AzureTenantId                   = "<Azure AzureTenantId Here>"
@@ -102,23 +104,23 @@ Foreach ($Module in $Modules) {
 If (!($AzureTenantId -match("^(\{){0,1}[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}(\}){0,1}$"))) {
     Write-Host ; Write-Host $(Get-Date -Format HH:mm:ss:) -ForegroundColor Gray -NoNewLine ; Write-Host " ERROR: " -NoNewline -ForegroundColor Red ; Write-Host "Azure Tenant Id is not a valid GUID"
     Break
-}
+    }
 
 # Subscriptions
 If ($AVDSubscriptions -eq '<AVD Subscriptions Here>') {
     Write-Host ; Write-Host $(Get-Date -Format HH:mm:ss:) -ForegroundColor Gray -NoNewLine ; Write-Host " ERROR: " -NoNewline -ForegroundColor Red ; Write-Host "AVD Subscription Variable not updated"
     Break
-}
+    }
 
 If ($AVDSubscriptions.Count -eq 0) {
     Write-Host ; Write-Host $(Get-Date -Format HH:mm:ss:) -ForegroundColor Gray -NoNewLine ; Write-Host " ERROR: " -NoNewline -ForegroundColor Red ; Write-Host "AVD Subscriptions Variable is empty"
     Break
-}
+    }
 
 $WindowPadSubs                   = 0
 If ($AVDSubscriptions.Count -gt 1) {
     $WindowPadSubs               = 90
-}
+    }
 
 
 ## Check to see if Remote Assistance is installed
@@ -128,14 +130,108 @@ If (!(Test-Path -Path 'C:\Windows\System32\msra.exe')) {
     Write-Host ; Write-Host $(Get-Date -Format HH:mm:ss:) -ForegroundColor Gray -NoNewLine ; Write-Host " Remote Assistance not Enabled, Switching the Remote Desktop Shadowing"
     $UseMSTSC                    = $true
     $WindowPadMSTSC              = 50
-}
+    }
 
 
 ## Log into Azure
 Write-Host ; Write-Host $(Get-Date -Format HH:mm:ss:) -ForegroundColor Gray -NoNewLine ; Write-Host " Log into Azure"
 Write-Host $(Get-Date -Format HH:mm:ss:) -ForegroundColor Gray -NoNewLine ; Write-Host "   Prompting for Log In Credentials for Azure Tenant ID " -ForegroundColor DarkYellow -NoNewline ; Write-Host $AzureTenantId -ForegroundColor DarkCyan
 $HideOutput                      = Get-AzContext -ListAvailable | Disconnect-AzAccount
-$HideOutput                      = Connect-AzAccount -Tenant $AzureTenantId -WarningAction SilentlyContinue
+$HideOutput                      = Connect-AzAccount -TenantId $AzureTenantId -WarningAction SilentlyContinue
+
+
+## Create Functions
+# Gather a list of Host Pools
+Function Gather_HostPools {
+
+    Write-Host $(Get-Date -Format HH:mm:ss:) -ForegroundColor Gray -NoNewLine ; Write-Host "   Gathering a list of Host Pools in the Subscription " -ForegroundColor DarkYellow -NoNewLine ; Write-Host $Subscriptions.Text -ForegroundColor DarkCyan
+
+    $HostPool.text               = "Gathering a list of Host Pools in the Subscription - Please Wait"
+    $HostPool.Enabled            = $false
+
+    $SubscriptionInfo            = Get-AzSubscription -SubscriptionName $Subscriptions.Text -WarningAction SilentlyContinue
+
+    $HostPools                   = Get-AzWvdHostPool -SubscriptionId $SubscriptionInfo.Id -WarningAction SilentlyContinue
+
+    $HostPool.Items.Clear()
+    Foreach ($HP in $HostPools) {
+        $HostPool.Items.Add($HP.Name) | Out-Null
+        }
+
+    $HostPool.text               = "Please Select the Host Pool required"
+    $HostPool.Enabled            = $true
+
+    }
+
+# Gather a list of users connected to the Selected Host Pool
+Function HostPoolSelected {
+
+    Write-Host $(Get-Date -Format HH:mm:ss:) -ForegroundColor Gray -NoNewLine ; Write-Host "   Gathering a list of Users Connected to " -ForegroundColor DarkYellow -NoNewLine ; Write-Host $HostPool.Text -ForegroundColor DarkCyan
+
+    Set-AzContext -Subscription $Subscriptions.Text -WarningAction SilentlyContinue
+    $SubscriptionInfo            = Get-AzSubscription -SubscriptionName $Subscriptions.Text -WarningAction SilentlyContinue
+    $HostPoolInfo                = Get-AzWvdHostPool -SubscriptionId $SubscriptionInfo.Id | Where {$_.Name -eq $HostPool.Text}
+
+    $UserSession.Items.Clear()
+    $UserSessionHost.Items.Clear()
+    $UserSessionID.Items.Clear()
+
+    Get-AzWvdUserSession -HostPoolName $HostPool.Text -ResourceGroupName $HostPoolInfo.id.Split('/')[4] -ErrorAction SilentlyContinue -Filter "SessionState eq 'active'"
+    $ActiveUsers                 = Get-AzWvdUserSession -HostPoolName $HostPool.Text -ResourceGroupName $HostPoolInfo.id.Split('/')[4] -ErrorAction SilentlyContinue -Filter "SessionState eq 'active'"
+
+    If ($ActiveUsers.Count -eq 0) {
+        $UserSession.text        = "No Active Users logged into Selected Host Pool"
+        $UserSession.Enabled     = $false
+        }
+    Else {
+        $UserSession.BackColor   = "white"
+        $UserSession.text        = "Please Select the User to be Shadowed"
+        $UserSession.Enabled     = $true
+        }
+
+    Foreach ($ActiveUser in $ActiveUsers) {
+        $UserSession.Items.Add($ActiveUser.ActiveDirectoryUserName)
+        $UserSessionHost.Items.Add($ActiveUser.Name.Split('/')[1])
+        $UserSessionID.Items.Add($ActiveUser.Name.Split('/')[2])
+        }
+
+    }
+
+# Shadow the Selected User
+Function ShadowUserSession {
+
+    $UserUPN                     = $UserSession.Text
+    $AVDSessionHost              = $UserSessionHost.Items.Item($UserSession.SelectedIndex)
+    $AVDSessionID                = $UserSessionID.Items.Item($UserSession.SelectedIndex)
+
+    If ($TakeControl.Checked -eq $True) {
+        $AllowControl            = "Yes"
+        }
+    Else {
+        $AllowControl            = "No"
+        }
+
+    $ShadowUser.Dispose()
+
+    Write-Host ; Write-Host $(Get-Date -Format HH:mm:ss:) -ForegroundColor Gray -NoNewLine ; Write-Host " Shadowing User " -NoNewline
+    Write-Host $UserUPN -ForegroundColor Cyan -NoNewline ; Write-Host ", Connected to " -NoNewline
+    Write-Host $AVDSessionHost -ForegroundColor Green -NoNewline ; Write-Host " on Session ID " -NoNewline
+    Write-Host $AVDSessionID -ForegroundColor Gray -NoNewline
+
+    If ($UseMSTSC -eq $true) {
+        If ($AllowControl -eq "Yes") {
+            Write-Host " with Remote Control " -NoNewline ; Write-Host "Enabled" -ForegroundColor Green
+            Start-Process -FilePath "mstsc.exe" -ArgumentList "/v:$AVDSessionHost /shadow:$AVDSessionID /control"
+            }
+            Else {
+            Write-Host " with Remote Control " -NoNewline ; Write-Host "Disabled" -ForegroundColor Red
+            Start-Process -FilePath "mstsc.exe" -ArgumentList "/v:$AVDSessionHost /shadow:$AVDSessionID"
+            }
+        }
+    Else {
+        Start-Process -FilePath "msra.exe" -ArgumentList "/OfferRa $($AVDSessionHost) $($UserUPN):$($AVDSessionID)"
+        }
+    }
 
 
 ## Launch Shadow Selector Windows
@@ -259,97 +355,5 @@ $HostPool.Add_SelectedValueChanged({ HostPoolSelected })
 $UserSession.Add_SelectedValueChanged({ $Shadow.enabled = $true })
 
 $Shadow.Add_Click({ ShadowUserSession })
-
-
-## Functions
-Function Gather_HostPools {
-
-    Write-Host $(Get-Date -Format HH:mm:ss:) -ForegroundColor Gray -NoNewLine ; Write-Host "   Gathering a list of Host Pools in the Subscription " -ForegroundColor DarkYellow -NoNewLine ; Write-Host $Subscriptions.Text -ForegroundColor DarkCyan
-
-    $HostPool.text               = "Gathering a list of Host Pools in the Subscription - Please Wait"
-    $HostPool.Enabled            = $false
-
-    Select-AzSubscription -Subscription $Subscriptions.Text -WarningAction SilentlyContinue | Out-Null
-
-    $SubscriptionInfo            = Get-AzSubscription -SubscriptionName $Subscriptions.Text -WarningAction SilentlyContinue
-    $HostPools                   = Get-AzWvdHostPool -SubscriptionId $SubscriptionInfo.Id -WarningAction SilentlyContinue
-
-    $HostPool.Items.Clear()
-    Foreach ($HP in $HostPools) {
-        $HostPool.Items.Add($HP.Name) | Out-Null
-        }
-
-    $HostPool.text               = "Please Select the Host Pool required"
-    $HostPool.Enabled            = $true
-
-    }
-
-
-Function HostPoolSelected {
-
-    Write-Host $(Get-Date -Format HH:mm:ss:) -ForegroundColor Gray -NoNewLine ; Write-Host "   Gathering a list of Users Connected to " -ForegroundColor DarkYellow -NoNewLine ; Write-Host $HostPool.Text -ForegroundColor DarkCyan
-
-    $SubscriptionInfo            = Get-AzSubscription -SubscriptionName $Subscriptions.Text -WarningAction SilentlyContinue
-    $HostPoolInfo                = Get-AzWvdHostPool -SubscriptionId $SubscriptionInfo.Id | Where {$_.Name -eq $HostPool.Text}
-
-    $UserSession.Items.Clear()
-    $UserSessionHost.Items.Clear()
-    $UserSessionID.Items.Clear()
-
-    $ActiveUsers                 = Get-AzWvdUserSession -HostPoolName $HostPool.Text -ResourceGroupName $HostPoolInfo.id.Split('/')[4] -ErrorAction SilentlyContinue -Filter "SessionState eq 'active'"
-
-    If ($ActiveUsers.Count -eq 0) {
-        $UserSession.text        = "No Active Users logged into Selected Host Pool"
-        $UserSession.Enabled     = $false
-        }
-    Else {
-        $UserSession.BackColor   = "white"
-        $UserSession.text        = "Please Select the User to be Shadowed"
-        $UserSession.Enabled     = $true
-        }
-
-    Foreach ($ActiveUser in $ActiveUsers) {
-        $UserSession.Items.Add($ActiveUser.ActiveDirectoryUserName)
-        $UserSessionHost.Items.Add($ActiveUser.Name.Split('/')[1])
-        $UserSessionID.Items.Add($ActiveUser.Name.Split('/')[2])
-        }
-
-    }
-
-
-Function ShadowUserSession {
-
-    $UserUPN                     = $UserSession.Text
-    $AVDSessionHost              = $UserSessionHost.Items.Item($UserSession.SelectedIndex)
-    $AVDSessionID                = $UserSessionID.Items.Item($UserSession.SelectedIndex)
-
-    If ($TakeControl.Checked -eq $True) {
-        $AllowControl            = "Yes"
-        }
-    Else {
-        $AllowControl            = "No"
-        }
-
-    $ShadowUser.Dispose()
-
-    Write-Host ; Write-Host $(Get-Date -Format HH:mm:ss:) -ForegroundColor Gray -NoNewLine ; Write-Host " Shadowing User " -NoNewline
-    Write-Host $UserUPN -ForegroundColor Cyan -NoNewline ; Write-Host ", Connected to " -NoNewline
-    Write-Host $AVDSessionHost -ForegroundColor Green -NoNewline ; Write-Host " on Session ID " -NoNewline
-    Write-Host $AVDSessionID -ForegroundColor Gray -NoNewline
-
-    If ($UseMSTSC -eq $true) {
-        If ($AllowControl -eq "Yes") {
-            Write-Host " with Remote Control " -NoNewline ; Write-Host "Enabled" -ForegroundColor Green
-            Start-Process -FilePath "mstsc.exe" -ArgumentList "/v:$AVDSessionHost /shadow:$AVDSessionID /control"
-            }
-            Else {
-            Write-Host " with Remote Control " -NoNewline ; Write-Host "Disabled" -ForegroundColor Red
-            Start-Process -FilePath "mstsc.exe" -ArgumentList "/v:$AVDSessionHost /shadow:$AVDSessionID"
-            }
-        }
-    Else {
-        Start-Process -FilePath "msra.exe" -ArgumentList "/OfferRa $($AVDSessionHost) $($UserUPN):$($AVDSessionID)"
-        }
-    }
 
 [void]$ShadowUser.ShowDialog()
